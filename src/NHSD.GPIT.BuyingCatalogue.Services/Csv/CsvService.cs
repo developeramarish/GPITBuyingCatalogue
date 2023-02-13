@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using NHSD.GPIT.BuyingCatalogue.EntityFramework;
@@ -62,6 +63,10 @@ namespace NHSD.GPIT.BuyingCatalogue.Services.Csv
                     Framework = oir.OrderItem.Order.SelectedFrameworkId,
                     InitialTerm = oir.OrderItem.Order.InitialPeriod,
                     MaximumTerm = oir.OrderItem.Order.MaximumTerm,
+                    PricingType = oir.OrderItem.OrderItemPrice.CataloguePriceType == CataloguePriceType.Tiered && oir.OrderItem.OrderItemPrice.CataloguePriceCalculationType == CataloguePriceCalculationType.Cumulative ?
+                        $"{oir.OrderItem.OrderItemPrice.CataloguePriceType} {oir.OrderItem.OrderItemPrice.CataloguePriceCalculationType}" : string.Empty,
+                    TieredArray = oir.OrderItem.OrderItemPrice.CataloguePriceType == CataloguePriceType.Tiered && oir.OrderItem.OrderItemPrice.CataloguePriceCalculationType == CataloguePriceCalculationType.Cumulative ?
+                        GetTieredArray(oir.OrderItem.OrderItemPrice.OrderItemPriceTiers) : string.Empty,
                 })
                 .OrderBy(o => o.ProductTypeId)
                 .ThenBy(o => o.ProductName)
@@ -122,6 +127,11 @@ namespace NHSD.GPIT.BuyingCatalogue.Services.Csv
         }
 
         private static string TimeUnitDescription(TimeUnit? timeUnit) => timeUnit?.Description() ?? string.Empty;
+
+        private static string GetTieredArray(ICollection<OrderItemPriceTier> orderItemPriceTiers)
+        {
+            return $"[{string.Join(";", orderItemPriceTiers.Select(item => $"[{item.LowerRange}:{item.Price}]"))}]";
+        }
 
         private async Task<Dictionary<CatalogueItemId, TimeUnit?>> GetBillingPeriods(int orderId)
         {
